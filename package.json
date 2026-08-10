@@ -1,0 +1,13 @@
+{
+  "name": "stan",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A picture speech board. Tap what you mean, hear it out loud.",
+  "scripts": {
+    "icons": "node tools/make-icons.mjs",
+    "symbols": "node tools/fetch-symbols.mjs",
+    "start": "node tools/serve.mjs",
+    "test": "node tools/smoke-test.mjs"
+  }
+}

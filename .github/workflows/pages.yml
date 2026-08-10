@@ -1,0 +1,46 @@
+# Publishes the board to GitHub Pages on every push to main.
+#
+# One-time setup in the repo: Settings → Pages → Source: "GitHub Actions".
+# Nothing to build — these are static files, so the whole job is "upload the
+# folder".
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Let a running deploy finish rather than cancelling it; a half-published
+# communication board is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # enablement lets the first run switch Pages on for the repo by itself.
+      # If GitHub refuses (token lacks admin), the fallback is one manual
+      # dropdown: Settings -> Pages -> Source: GitHub Actions, then re-run.
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
