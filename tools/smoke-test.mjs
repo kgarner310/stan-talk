@@ -144,6 +144,35 @@ try {
     await page.waitForTimeout(140);
     check(`${name}: clear empties the strip`, await strip(), 'Tap pictures to build a sentence');
 
+    // Swearing is his vocabulary and speaks as itself — "Bullshit", not "I feel
+    // Bullshit" — and the switch that hides it must not shift any tile above it.
+    await tap('I feel');
+    const feelTilesWith = await page.locator('#grid .tile').count();
+    await tap('strong words');
+    check(`${name}: strong words are reachable`, await page.getByRole('button', { name: 'Bullshit', exact: true }).count(), 1);
+    await page.getByRole('button', { name: 'Bullshit', exact: true }).click();
+    await page.waitForTimeout(200);
+    check(`${name}: swearing speaks as itself`, await strip(), '🐂 This is bullshit');
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await page.waitForTimeout(140);
+
+    // Hiding it removes exactly one tile, and it is the last one.
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('stan.settings.v1') || '{}');
+      localStorage.setItem('stan.settings.v1', JSON.stringify({ ...s, strongWords: false }));
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    await tap('I feel');
+    check(`${name}: hiding strong words drops exactly one tile`, await page.locator('#grid .tile').count(), feelTilesWith - 1);
+    check(`${name}: first tile under "I feel" is unmoved`, await page.locator('#grid .tile .tile-label').first().innerText(), 'in my body');
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('stan.settings.v1') || '{}');
+      localStorage.setItem('stan.settings.v1', JSON.stringify({ ...s, strongWords: true }));
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+
     // Clear also returns to the root, so the board below is the home grid.
     // Every tile needs a picture — a text-only tile is a reading test.
     const missing = await page.$$eval('#grid .tile', (tiles) =>

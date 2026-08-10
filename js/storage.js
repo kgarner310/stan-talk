@@ -42,4 +42,8 @@ export const DEFAULT_SETTINGS = {
   autoSpeakOnFinish: true,
   showWords: true,
   soundItOut: true,
+  // Swearing is on by default: it is his vocabulary, not a privilege. The
+  // switch exists so he (or whoever is holding the iPad) can put it away for
+  // an afternoon, not so someone else can decide he doesn't get it.
+  strongWords: true,
 };

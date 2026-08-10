@@ -55,6 +55,13 @@ const w = (icon, label, text) => ({
   text,
 });
 
+/**
+ * Exclamation tile: speaks on its own instead of joining the sentence being
+ * built. Swearing is not a clause — sitting under "I feel" it would otherwise
+ * compose into "I feel This is bullshit".
+ */
+const x = (icon, label, text) => ({ ...w(icon, label, text), alone: true });
+
 // ---------------------------------------------------------------------------
 
 const want = {
@@ -179,6 +186,35 @@ const feel = {
     w('⏸️', 'like I need a minute'),
     w('🙂', 'like myself today'),
     w('❓', 'not right, and I cannot explain it', 'like something is not right, and I cannot explain it'),
+    // Swearing. He writes "these beds are all nothing but bullshit" — this is
+    // his register, and a board that cannot say what he would say is not his
+    // voice. Standard AAC practice includes profanity for exactly this reason:
+    // withholding it is voice-policing dressed up as politeness.
+    //
+    // These are statements on their own, so they carry `text` that ignores the
+    // "I feel" prefix. Kept LAST in the list on purpose — `gated` lets Settings
+    // hide the tile without shifting the position of anything above it, so
+    // nobody's motor memory breaks either way.
+    {
+      id: 'feel-swear',
+      icon: '🤬',
+      label: 'strong words',
+      silent: true,
+      color: COLORS.feel,
+      gated: 'strongWords',
+      children: [
+        x('🐂', 'Bullshit', 'This is bullshit'),
+        x('💢', 'Damn it'),
+        x('⚡', 'God damn it'),
+        x('💩', 'Shit'),
+        x('🤬', 'Fuck'),
+        x('🚫', 'Fuck this'),
+        x('😡', 'Fuck off'),
+        x('👊', 'Son of a bitch'),
+        x('🤷', 'What the hell'),
+        x('✋', 'Hell no'),
+      ],
+    },
   ],
 };
 
@@ -284,26 +320,41 @@ const neck = {
     // times a day, the adhesive baseplate changes daily, and the LaryTube keeps
     // the stoma open. Using the actual names means a nurse or a supplier knows
     // exactly what he means on the first try.
+    // Built from his own guidelines sheet, so the words match his actual kit:
+    // LaryTube plus LaryClips with sticky pads and reusable Velcro wings — not
+    // adhesive baseplates. His HME comes in a Home type and a Night type, and
+    // the tube is cleaned at least twice a day with soap and the kit brush.
     g('neck-kit', '🧰', 'my kit', COLORS.neck, [
       w('🔁', 'I need a new HME'),
       w('🚫', 'My HME is clogged'),
-      w('🩹', 'My baseplate is coming off'),
-      w('🆕', 'I need a new baseplate'),
+      w('🏠', 'I need my Home HME'),
+      w('🌙', 'I need my Night HME'),
       w('🫙', 'My LaryTube came out'),
       w('⬇️', 'I need my LaryTube put back in'),
-      w('📎', 'I need my LaryClip'),
+      w('📎', 'My LaryClip is not sticking'),
+      w('🩹', 'I need new sticky pads'),
       w('🤲', 'Help me put this on'),
-      w('🧣', 'I need my stoma cover'),
+    ]),
+    g('neck-clean', '🧼', 'cleaning', COLORS.neck, [
+      w('🧽', 'My LaryTube needs cleaning'),
+      w('🪥', 'I need the brush and the soap'),
+      w('🤏', 'I need a skin tac wipe'),
+      w('⏳', 'Let it dry first'),
+      w('💧', 'I need gauze and saline'),
+      w('✨', 'Clean around my stoma'),
+      w('🪨', 'There is crusting'),
+      w('♻️', 'Save the Velcro wings'),
+      w('😖', 'My stoma is sore'),
     ]),
     g('neck-supplies', '📦', 'supplies', COLORS.neck, [
       w('📉', 'We are running low on supplies'),
       w('🔁', 'I need more HMEs'),
-      w('🩹', 'I need more baseplates'),
+      w('📎', 'I need more LaryClips'),
+      w('🩹', 'I need more sticky pads'),
       w('🛒', 'We need to order more from Atos'),
+      w('🗣️', 'Call my speech therapist'),
       w('❓', 'Where are my supplies?'),
       w('🚿', 'I need my shower cover'),
-      w('💧', 'I need saline'),
-      w('🧼', 'I need my cleaning brush'),
     ]),
     g('neck-voice', '🗣️', 'my voice', COLORS.neck, [
       w('📢', 'I need my electrolarynx'),
@@ -333,7 +384,6 @@ const neck = {
       w('🚨', 'My drain came out'),
       w('❓', 'When does the drain come out?'),
     ]),
-    w('😖', 'My stoma is sore'),
     w('🩸', 'My stoma is bleeding'),
   ],
 };

@@ -168,7 +168,8 @@ function currentTiles() {
       replay: true,
     }));
   }
-  return [...(node.children || []), ...customFor(node.id)];
+  const kids = (node.children || []).filter((c) => !c.gated || state.settings[c.gated] !== false);
+  return [...kids, ...customFor(node.id)];
 }
 
 function onTile(node) {
@@ -176,6 +177,17 @@ function onTile(node) {
 
   // A recent phrase is already a finished sentence — replay it whole rather
   // than appending it to whatever is half-built.
+  // An exclamation stands on its own: it replaces whatever was half-built
+  // rather than becoming the tail of it, and speaks the moment it is tapped.
+  if (node.alone) {
+    const text = node.text ?? node.label;
+    state.words = [{ icon: node.icon, text, id: node.id }];
+    state.path = [];
+    render();
+    speakSentence();
+    return;
+  }
+
   if (node.replay) {
     state.words = [{ icon: node.icon, text: node.label, id: node.id }];
     state.path = [];
@@ -534,6 +546,11 @@ function renderSettings() {
   const behave = section('How it works');
   behave.appendChild(toggle('Show words under the pictures', state.settings.showWords, (showWords) => {
     patch({ showWords });
+    renderSettings();
+    render();
+  }));
+  behave.appendChild(toggle('Show the strong words under "I feel"', state.settings.strongWords, (strongWords) => {
+    patch({ strongWords });
     renderSettings();
     render();
   }));
