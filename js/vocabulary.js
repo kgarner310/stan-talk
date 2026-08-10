@@ -485,10 +485,12 @@ const doThis = {
   text: 'Please',
   color: COLORS.doThis,
   children: [
+    // Names live under People, where each one opens its own set of phrases.
+    // These stay generic on purpose — and note there is no "call my wife": his
+    // partner died, and a board should never hand him that tile by accident.
     g('do-call', '📞', 'call someone', COLORS.doThis, [
       w('🧑‍⚕️', 'call the nurse'),
       w('🩺', 'call the doctor'),
-      w('💗', 'call my wife'),
       w('👨‍👩‍👧', 'call my family'),
       w('🆘', 'get someone who can help'),
     ]),
@@ -550,8 +552,8 @@ const talk = {
     // His dog carries more weight than anything else in this vocabulary. Put a
     // photo of him on this tile — Settings → Change tile pictures — and rename
     // these with his actual name using "His own words".
-    g('talk-dog', '🐕', 'my dog', COLORS.talk, [
-      w('❓', 'How is my dog?'),
+    g('talk-dog', '🐕', 'Jag', COLORS.talk, [
+      w('❓', 'How is Jag?'),
       w('💭', 'I miss him'),
       w('📷', 'Show me a picture of him'),
       w('🌳', 'Has he been outside today?'),
@@ -634,10 +636,69 @@ export const QUICK = [
   { icon: '🤷', label: "Don't get it", text: 'I do not understand', color: '#5A6472' },
 ];
 
+/**
+ * His people. Put a real photo on every one of these — Settings → Change tile
+ * pictures. A face is recognised instantly; a name has to be read.
+ *
+ * Two entries carry more than a name:
+ *
+ * - Zack and Zach sound identical and are spelled nearly alike, which on a
+ *   picture board is a genuine mis-tap waiting to happen. Their labels carry
+ *   the relationship to tell them apart, and photos will do it better still.
+ * - `gone: true` marks someone who has died. It swaps the whole action list —
+ *   nobody should be offered "Is Bandy coming?" about someone they lost.
+ * - `light: true` softens that further, for someone remembered at more of a
+ *   distance. Bandy and Stan had parted ways before she passed; a full
+ *   missing-you screen would be the board deciding his feelings for him.
+ *   Eric — his son — gets the full remembering screen.
+ */
 export const DEFAULT_PEOPLE = [
-  { icon: '💗', label: 'my wife' },
-  { icon: '👦', label: 'my son' },
-  { icon: '👧', label: 'my daughter' },
-  { icon: '🧑‍⚕️', label: 'the nurse' },
-  { icon: '🩺', label: 'the doctor' },
+  { icon: '🧑', label: 'Kyle', role: 'friend' },
+  { icon: '👩', label: 'Tracey', role: 'sister' },
+  { icon: '🚗', label: 'Brad', role: 'friend' },
+  { icon: '👦', label: 'Zach (grandson)', name: 'Zach', role: 'grandson' },
+  { icon: '🧑‍🦱', label: 'Zack (nephew)', name: 'Zack', role: 'nephew' },
+  { icon: '🕯️', label: 'Eric', role: 'son', gone: true },
+  { icon: '👩‍⚕️', label: 'Amanda', role: 'nurse' },
+  { icon: '👩‍🦰', label: 'Desiree' },
+  { icon: '🕯️', label: 'Bandy', gone: true, light: true },
 ];
+
+/**
+ * The things he might want to say about a person, generated per name.
+ *
+ * Deliberately free of he/she/him/her: the same eight phrases then work for
+ * everyone on the list without the board having to know anyone's pronouns,
+ * and without me guessing wrong about someone I have never met.
+ */
+export function personActions(person) {
+  const name = person.name || person.label;
+  const who = person.role ? `my ${person.role} ${name}` : name;
+
+  if (person.gone) {
+    if (person.light) {
+      return [
+        w('💭', `I was thinking about ${name}`),
+        w('📷', `Show me a picture of ${name}`),
+      ];
+    }
+    return [
+      w('💭', `I miss ${name}`),
+      w('❤️', `I was thinking about ${name}`),
+      w('🕯️', `I wish ${name} was here`),
+      w('🗣️', `Tell me about ${name}`),
+      w('📷', `Show me a picture of ${name}`),
+    ];
+  }
+
+  return [
+    w('📞', `Call ${who}`),
+    w('❓', `Where is ${name}?`),
+    w('🕐', `Is ${name} coming?`),
+    w('👀', `I want to see ${name}`),
+    w('💭', `I miss ${name}`),
+    w('❤️', `Give ${name} my love`),
+    w('🙏', `Thank ${name} for me`),
+    w('🤫', `Do not tell ${name}`),
+  ];
+}

@@ -1,4 +1,4 @@
-import { ROOT, QUICK, DEFAULT_PEOPLE } from './vocabulary.js';
+import { ROOT, QUICK, DEFAULT_PEOPLE, personActions } from './vocabulary.js';
 import { say, hush, unlock, getVoices, refreshVoices, supported } from './speech.js';
 import { load, save, KEYS, DEFAULT_SETTINGS } from './storage.js';
 import { buildBodyMap, EXTRA_PARTS } from './bodymap.js';
@@ -158,7 +158,17 @@ function currentTiles() {
   const node = currentNode();
   if (!node) return [...ROOT, ...customFor('home')];
   if (node.dynamic === 'people') {
-    return state.people.map((p) => ({ id: `person-${slug(p.label)}`, icon: p.icon, label: p.label }));
+    // A person is a screen, not a word: tapping a name opens what he might
+    // want to say about them, so "Call my sister Tracey" is three taps rather
+    // than a bare fragment.
+    return state.people.map((p) => ({
+      id: `person-${slug(p.label)}`,
+      icon: p.icon,
+      label: p.label,
+      silent: true,
+      color: node.color,
+      children: personActions(p),
+    }));
   }
   if (node.dynamic === 'recents') {
     return state.recents.map((r, i) => ({

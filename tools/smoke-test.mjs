@@ -144,6 +144,36 @@ try {
     await page.waitForTimeout(140);
     check(`${name}: clear empties the strip`, await strip(), 'Tap pictures to build a sentence');
 
+    // A person opens their own screen; nobody is offered "Is Bandy coming?"
+    // about someone who died.
+    await tap('People');
+    await tap('Tracey');
+    check(`${name}: a person opens their phrases`, await page.getByRole('button', { name: 'Call my sister Tracey', exact: true }).count(), 1);
+    await page.getByRole('button', { name: 'Call my sister Tracey', exact: true }).click();
+    await page.waitForTimeout(200);
+    check(`${name}: person phrase speaks in full`, await strip(), '📞 Call my sister Tracey');
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await page.waitForTimeout(140);
+    await tap('People');
+    await tap('Bandy');
+    const bandy = await page.locator('#grid .tile .tile-label').allInnerTexts();
+    check(`${name}: no "coming" phrase for someone who died`, bandy.some((t) => /coming|Call/.test(t)), false);
+    // They had parted ways before she passed — remembering stays light, and
+    // the board must not put "I miss" or "I wish" in his mouth about her.
+    check(`${name}: Bandy's screen stays light`, bandy.some((t) => /miss|wish/.test(t)), false);
+    check(`${name}: Bandy can still be brought up`, bandy.includes('I was thinking about Bandy'), true);
+    await page.getByRole('button', { name: '🏠 Home' }).click();
+    await page.waitForTimeout(140);
+    // His son gets the full remembering screen.
+    await tap('People');
+    await tap('Eric');
+    const eric = await page.locator('#grid .tile .tile-label').allInnerTexts();
+    check(`${name}: Eric has the full remembering screen`, eric.includes('I miss Eric') && eric.includes('I wish Eric was here'), true);
+    check(`${name}: no "coming" or "call" phrases for Eric`, eric.some((t) => /coming|Call/.test(t)), false);
+    // Only browsed here, so the strip is empty and Clear is disabled — go home.
+    await page.getByRole('button', { name: '🏠 Home' }).click();
+    await page.waitForTimeout(140);
+
     // Swearing is his vocabulary and speaks as itself — "Bullshit", not "I feel
     // Bullshit" — and the switch that hides it must not shift any tile above it.
     await tap('I feel');
