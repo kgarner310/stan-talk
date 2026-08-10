@@ -135,8 +135,8 @@ const feel = {
       w('👀', 'wide awake'),
       w('🥵', 'hot'),
       w('🥶', 'cold'),
-      w('🍽️', 'hungry'),
-      w('🥤', 'thirsty'),
+      // Hungry and thirsty live under the feeding tube instead — while he is
+      // NPO they are about the feed, not about wanting a sandwich.
       w('🤢', 'sick to my stomach'),
       w('😵‍💫', 'dizzy'),
       w('😖', 'itchy'),
@@ -162,6 +162,18 @@ const feel = {
       w('🌅', 'better than this morning'),
       w('🌇', 'worse than this morning'),
       w('❗', 'like something changed'),
+    ]),
+    // Straight out of his texts: "Down and out bro I'm fed up", "this place is
+    // a drag". He should not have to write that longhand either.
+    g('feel-stuck', '🏥', 'about this place', COLORS.feel, [
+      w('😤', 'fed up with this place'),
+      w('🏠', 'ready to be home'),
+      w('🤐', 'like nobody tells me anything'),
+      w('😔', 'like I am in the way here'),
+      w('😴', 'like I cannot rest in here'),
+      w('🛏️', 'like I want my own bed'),
+      w('⬇️', 'down and out today'),
+      w('💪', 'better than I did yesterday'),
     ]),
     w('👌', 'fine, really'),
     w('⏸️', 'like I need a minute'),
@@ -267,15 +279,31 @@ const neck = {
       w('🩸', 'There is blood in it'),
       w('✅', 'It is clear today'),
     ]),
+    // The real product names, because these are the words said out loud around
+    // him every day: the HME cassette changes daily and gets checked three
+    // times a day, the adhesive baseplate changes daily, and the LaryTube keeps
+    // the stoma open. Using the actual names means a nurse or a supplier knows
+    // exactly what he means on the first try.
     g('neck-kit', '🧰', 'my kit', COLORS.neck, [
       w('🔁', 'I need a new HME'),
+      w('🚫', 'My HME is clogged'),
       w('🩹', 'My baseplate is coming off'),
       w('🆕', 'I need a new baseplate'),
+      w('🫙', 'My LaryTube came out'),
+      w('⬇️', 'I need my LaryTube put back in'),
+      w('📎', 'I need my LaryClip'),
       w('🤲', 'Help me put this on'),
       w('🧣', 'I need my stoma cover'),
+    ]),
+    g('neck-supplies', '📦', 'supplies', COLORS.neck, [
+      w('📉', 'We are running low on supplies'),
+      w('🔁', 'I need more HMEs'),
+      w('🩹', 'I need more baseplates'),
+      w('🛒', 'We need to order more from Atos'),
+      w('❓', 'Where are my supplies?'),
       w('🚿', 'I need my shower cover'),
-      w('❓', 'Where is my kit?'),
-      w('🧼', 'It needs cleaning'),
+      w('💧', 'I need saline'),
+      w('🧼', 'I need my cleaning brush'),
     ]),
     g('neck-voice', '🗣️', 'my voice', COLORS.neck, [
       w('📢', 'I need my electrolarynx'),
@@ -307,7 +335,6 @@ const neck = {
     ]),
     w('😖', 'My stoma is sore'),
     w('🩸', 'My stoma is bleeding'),
-    w('👃', 'I cannot smell or taste this'),
   ],
 };
 
@@ -381,6 +408,19 @@ const ask = {
       w('🎒', 'Where are my things?'),
       w('🧑‍⚕️', 'Where is the nurse?'),
     ]),
+    // Going home is the thing he asks about most, and the answer keeps moving —
+    // told he is going tomorrow, then told maybe tomorrow again. That deserves
+    // its own screen rather than one buried tile.
+    g('ask-home', '🏠', 'going home', COLORS.ask, [
+      w('🏠', 'When can I go home?'),
+      w('📅', 'Am I going home today?'),
+      w('🩺', 'Did they say anything about going home?'),
+      w('🔄', 'They keep changing the day'),
+      w('👍', 'I am ready to go home'),
+      w('📋', 'What has to happen before I can go?'),
+      w('🚗', 'Who is taking me home?'),
+      w('🤝', 'Will someone stay with me?'),
+    ]),
     w('🆗', 'Am I okay?'),
     w('😟', 'Is it serious?'),
     w('🔁', 'Can you say that again?'),
@@ -428,11 +468,23 @@ const doThis = {
       w('🌙', 'leave it until tonight'),
       w('🌅', 'leave it until tomorrow'),
     ]),
+    // "I don't know how to do all that I need to know myself. I guess I better
+    // start taking some fast lessons." Learning his own stoma care is the thing
+    // standing between him and home, so give him the words for being taught.
+    g('do-teach', '🎓', 'teach me', COLORS.doThis, [
+      w('👀', 'show me how to do this'),
+      w('🐢', 'go slower so I can learn it'),
+      w('🙋', 'let me try it myself'),
+      w('✍️', 'write the steps down for me'),
+      w('🔁', 'show me one more time'),
+      w('🤲', 'watch me do it'),
+      w('✅', 'I think I have got it'),
+      w('❓', 'what happens if I get it wrong?'),
+    ]),
     w('👋', 'come here'),
     w('✋', 'wait a second'),
     w('🐢', 'slow down'),
     w('⏱️', 'give me a minute'),
-    w('✍️', 'write that down for me'),
     w('🗣️', 'let me finish'),
     w('🚫', 'do not touch that'),
   ],
@@ -445,17 +497,40 @@ const talk = {
   silent: true,
   color: COLORS.talk,
   children: [
+    // His dog carries more weight than anything else in this vocabulary. Put a
+    // photo of him on this tile — Settings → Change tile pictures — and rename
+    // these with his actual name using "His own words".
+    g('talk-dog', '🐕', 'my dog', COLORS.talk, [
+      w('❓', 'How is my dog?'),
+      w('💭', 'I miss him'),
+      w('📷', 'Show me a picture of him'),
+      w('🌳', 'Has he been outside today?'),
+      w('🤲', 'Give him a belly rub for me'),
+      w('💦', 'Do not let him get too wet'),
+      w('❤️', 'Tell him I love him'),
+      w('🏠', 'I cannot wait to see him'),
+      w('🙏', 'Thank you for taking care of him'),
+    ]),
+    // He apologises for having needs — "enough of my crybaby mouth", "I'm going
+    // to owe you everything I got". Give him one tap for the thing he keeps
+    // spending a whole handwritten paragraph on.
+    g('talk-thanks', '🙏', 'thank you', COLORS.talk, [
+      w('🙏', 'Thank you, I mean it'),
+      w('💚', 'I cannot thank you enough'),
+      w('🤝', 'You are a good friend'),
+      w('🎱', 'I owe you a game of pool'),
+      w('😞', 'I do not want to be a burden'),
+      w('🤐', 'Sorry for complaining'),
+      w('👊', 'Thanks, brother'),
+      w('😊', 'I am glad you came'),
+    ]),
     w('👋', 'Hello'),
     w('🌅', 'Good morning'),
     w('🌙', 'Good night'),
-    w('🙏', 'Thank you'),
     w('❤️', 'I love you'),
-    w('😊', 'I am glad you came'),
     w('🤗', 'How are you?'),
     w('👂', 'I am listening'),
     w('😄', 'That is funny'),
-    w('💭', 'I missed you'),
-    w('😞', 'Sorry'),
     w('🤷', 'Never mind, it is not important'),
   ],
 };
