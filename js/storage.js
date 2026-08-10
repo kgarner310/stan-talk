@@ -7,7 +7,10 @@ const mem = new Map();
 
 export const KEYS = {
   recents: 'stan.recents.v1',
-  people: 'stan.people.v1',
+  // v2: the defaults gained his real people and their groups. Devices that
+  // opened the app earlier persisted the old default list under v1; bumping
+  // the key hands them the full one instead of freezing them in the past.
+  people: 'stan.people.v2',
   settings: 'stan.settings.v1',
   // { [categoryId]: [{ icon, label }] } — his own words, added on the device.
   // Anything personal lives here and only here: drug names, clinicians,

@@ -160,15 +160,30 @@ function currentTiles() {
   if (node.dynamic === 'people') {
     // A person is a screen, not a word: tapping a name opens what he might
     // want to say about them, so "Call my sister Tracey" is three taps rather
-    // than a bare fragment.
-    return state.people.map((p) => ({
+    // than a bare fragment. There are too many people for one screen now, so
+    // they fold into Family / Friends / Neighbors; anyone without a group
+    // (Amanda, and people added in Settings) sits beside the group tiles.
+    const personNode = (p) => ({
       id: `person-${slug(p.label)}`,
       icon: p.icon,
       label: p.label,
       silent: true,
       color: node.color,
       children: personActions(p),
-    }));
+    });
+    const groups = [
+      ['family', '👨‍👩‍👧', 'Family'],
+      ['friends', '🤝', 'Friends'],
+      ['neighbors', '🏘️', 'Neighbors'],
+    ]
+      .map(([key, icon, label]) => {
+        const members = state.people.filter((p) => p.group === key);
+        if (!members.length) return null;
+        return { id: `people-${key}`, icon, label, silent: true, color: node.color, children: members.map(personNode) };
+      })
+      .filter(Boolean);
+    const ungrouped = state.people.filter((p) => !['family', 'friends', 'neighbors'].includes(p.group));
+    return [...groups, ...ungrouped.map(personNode)];
   }
   if (node.dynamic === 'recents') {
     return state.recents.map((r, i) => ({

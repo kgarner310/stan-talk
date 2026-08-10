@@ -127,6 +127,21 @@ const want = {
     w('🚻', 'the bathroom', 'to go to the bathroom'),
     w('🤫', 'to be alone for a while'),
     w('🤝', 'you to stay'),
+    // His actual map: the towns he rides between and the stops that matter.
+    // Brad drives. Health Smart is HIS pharmacy — named so the driver knows
+    // which one, with CVS separate because it is a different errand.
+    g('want-go', '🚗', 'to go somewhere', COLORS.want, [
+      w('🛒', 'Food Lion', 'to go to Food Lion'),
+      w('🏬', 'Walmart', 'to go to Walmart'),
+      w('💊', 'Health Smart', 'to go to Health Smart, my pharmacy'),
+      w('⚕️', 'CVS', 'to go to CVS'),
+      w('🏥', 'the clinic', 'to go to the clinic'),
+      w('🎟️', 'a lottery ticket', 'a lottery ticket'),
+      w('🏘️', 'Maiden', 'to ride to Maiden'),
+      w('🏙️', 'Hickory', 'to ride to Hickory'),
+      w('🌆', 'Lincolnton', 'to ride to Lincolnton'),
+      w('🏞️', 'Newton', 'to ride to Newton'),
+    ]),
   ],
 };
 
@@ -576,12 +591,23 @@ const talk = {
       w('👊', 'Thanks, brother'),
       w('😊', 'I am glad you came'),
     ]),
+    // His life before all this. A laryngectomy takes the voice that told
+    // these stories; the tiles give the openers back, and a listener's
+    // questions can carry it from there.
+    g('talk-life', '📖', 'my stories', COLORS.talk, [
+      w('🛢️', 'I worked on oil rigs in the Gulf'),
+      w('🧱', 'I was a brick mason for years'),
+      w('🏭', 'I worked at Carolina Mills'),
+      w('🌱', 'I used to do lawn maintenance'),
+      w('❓', 'Ask me about it'),
+    ]),
     w('👋', 'Hello'),
     w('🌅', 'Good morning'),
     w('🌙', 'Good night'),
     w('❤️', 'I love you'),
     w('🤗', 'How are you?'),
-    w('👂', 'I am listening'),
+    // He cannot laugh out loud anymore — a laryngectomy takes that too. This
+    // tile is how amusement gets a voice.
     w('😄', 'That is funny'),
     w('🤷', 'Never mind, it is not important'),
   ],
@@ -653,15 +679,39 @@ export const QUICK = [
  *   Eric — his son — gets the full remembering screen.
  */
 export const DEFAULT_PEOPLE = [
-  { icon: '🧑', label: 'Kyle', role: 'friend' },
-  { icon: '👩', label: 'Tracey', role: 'sister' },
-  { icon: '🚗', label: 'Brad', role: 'friend' },
-  { icon: '👦', label: 'Zach (grandson)', name: 'Zach', role: 'grandson' },
-  { icon: '🧑‍🦱', label: 'Zack (nephew)', name: 'Zack', role: 'nephew' },
-  { icon: '🕯️', label: 'Eric', role: 'son', gone: true },
+  // Family. The remembering entries sit together at the end of the group:
+  // Eric (his son), his dad, his mom, and his grandma. Dad, Mom and Grandma
+  // are marked gone on the family's timeline — if either parent is living,
+  // flip the flag and they get the full call/visit set instead.
+  { icon: '👩', label: 'Tracey', role: 'sister', group: 'family' },
+  { icon: '👦', label: 'Zach (grandson)', name: 'Zach', role: 'grandson', group: 'family' },
+  { icon: '🧑‍🦱', label: 'Zack (nephew)', name: 'Zack', role: 'nephew', group: 'family' },
+  { icon: '👩‍🦰', label: 'Desiree', group: 'family' },
+  { icon: '🕯️', label: 'Eric', role: 'son', gone: true, group: 'family' },
+  { icon: '👨‍🦳', label: 'Dad', gone: true, group: 'family' },
+  { icon: '👩‍🦳', label: 'Mom', gone: true, group: 'family' },
+  { icon: '👵', label: 'Grandma', gone: true, group: 'family' },
+  { icon: '🕯️', label: 'Bandy', gone: true, light: true, group: 'family' },
+
+  // Friends. Some icons are mnemonics until photos replace them — a moon for
+  // Cindy, a bee for Melissa, a gem for Tiffany.
+  { icon: '🧑', label: 'Kyle', role: 'friend', group: 'friends' },
+  { icon: '🚗', label: 'Brad', role: 'friend', group: 'friends' },
+  { icon: '🌙', label: 'Cindy', role: 'friend', group: 'friends' },
+  { icon: '🌼', label: 'Angela', role: 'friend', group: 'friends' },
+  { icon: '💎', label: 'Tiffany', role: 'friend', group: 'friends' },
+  { icon: '🐝', label: 'Melissa', role: 'friend', group: 'friends' },
+  { icon: '👧', label: 'Laney', group: 'friends' },
+  { icon: '🧒', label: 'Evie', group: 'friends' },
+
+  // Neighbors.
+  { icon: '🧔', label: 'Alan', role: 'neighbor', group: 'neighbors' },
+  { icon: '👓', label: 'Rick', role: 'neighbor', group: 'neighbors' },
+  { icon: '🧢', label: 'Bobby', role: 'neighbor', group: 'neighbors' },
+  { icon: '🌺', label: 'Dnasia', role: 'neighbor', group: 'neighbors' },
+
+  // No group: shown at the top level of People, beside the group tiles.
   { icon: '👩‍⚕️', label: 'Amanda', role: 'nurse' },
-  { icon: '👩‍🦰', label: 'Desiree' },
-  { icon: '🕯️', label: 'Bandy', gone: true, light: true },
 ];
 
 /**

@@ -147,6 +147,7 @@ try {
     // A person opens their own screen; nobody is offered "Is Bandy coming?"
     // about someone who died.
     await tap('People');
+    await tap('Family');
     await tap('Tracey');
     check(`${name}: a person opens their phrases`, await page.getByRole('button', { name: 'Call my sister Tracey', exact: true }).count(), 1);
     await page.getByRole('button', { name: 'Call my sister Tracey', exact: true }).click();
@@ -155,6 +156,7 @@ try {
     await page.getByRole('button', { name: 'Clear' }).click();
     await page.waitForTimeout(140);
     await tap('People');
+    await tap('Family');
     await tap('Bandy');
     const bandy = await page.locator('#grid .tile .tile-label').allInnerTexts();
     check(`${name}: no "coming" phrase for someone who died`, bandy.some((t) => /coming|Call/.test(t)), false);
@@ -166,12 +168,38 @@ try {
     await page.waitForTimeout(140);
     // His son gets the full remembering screen.
     await tap('People');
+    await tap('Family');
     await tap('Eric');
     const eric = await page.locator('#grid .tile .tile-label').allInnerTexts();
     check(`${name}: Eric has the full remembering screen`, eric.includes('I miss Eric') && eric.includes('I wish Eric was here'), true);
     check(`${name}: no "coming" or "call" phrases for Eric`, eric.some((t) => /coming|Call/.test(t)), false);
-    // Only browsed here, so the strip is empty and Clear is disabled — go home.
     await page.getByRole('button', { name: '🏠 Home' }).click();
+    await page.waitForTimeout(140);
+
+    // The rest of his world: friends and neighbors grouped, his errands under
+    // "I want", and his work stories under Talking.
+    await tap('People');
+    await tap('Friends');
+    check(`${name}: friends are grouped`, await page.getByRole('button', { name: 'Kyle', exact: true }).count(), 1);
+    await page.getByRole('button', { name: '🏠 Home' }).click();
+    await page.waitForTimeout(140);
+    await tap('People');
+    await tap('Neighbors');
+    check(`${name}: neighbors are grouped`, await page.getByRole('button', { name: 'Dnasia', exact: true }).count(), 1);
+    await page.getByRole('button', { name: '🏠 Home' }).click();
+    await page.waitForTimeout(140);
+    await tap('I want');
+    await tap('to go somewhere');
+    await tap('Food Lion');
+    check(`${name}: errands compose`, await strip(), '🙋 I want 🛒 to go to Food Lion');
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await page.waitForTimeout(140);
+    await tap('Talking');
+    await tap('my stories');
+    await tap('I worked on oil rigs in the Gulf');
+    check(`${name}: his stories speak whole`, await strip(), '🛢️ I worked on oil rigs in the Gulf');
+    // A story is a leaf: speaking it already returned the board home.
+    await page.getByRole('button', { name: 'Clear' }).click();
     await page.waitForTimeout(140);
 
     // Swearing is his vocabulary and speaks as itself — "Bullshit", not "I feel
