@@ -47,6 +47,7 @@
     <button id="btn-back" class="nav-btn" disabled>⬅️ Back</button>
     <button id="btn-home" class="nav-btn" disabled>🏠 Home</button>
     <span id="crumb" class="crumb"></span>
+    <button id="btn-find" class="nav-btn">🔍 Find</button>
     <button id="btn-keyboard" class="nav-btn">⌨️ Type</button>
     <button id="btn-settings" class="nav-btn" aria-label="Settings">⚙️</button>
   </nav>
@@ -55,6 +56,10 @@
     <span>Tap any tile to change its picture.</span>
     <button id="btn-edit-done" class="nav-btn">Done</button>
   </div>
+
+  <!-- The one place suggestions ever appear. His most-said phrases when idle,
+       finish-my-sentence chips while building. The tile grid never reorders. -->
+  <div id="suggest" class="suggest" hidden></div>
 
   <main class="body">
     <div id="grid" class="grid"></div>
@@ -67,6 +72,7 @@
 
 <!-- Single reusable picker so we never leak file inputs into the DOM. -->
 <input id="photo-input" type="file" accept="image/*" hidden />
+<input id="backup-input" type="file" accept=".json,application/json" hidden />
 
 <script type="module" src="js/app.js"></script>
 </body>

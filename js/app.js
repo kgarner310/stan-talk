@@ -5,7 +5,20 @@ import { buildBodyMap, EXTRA_PARTS } from './bodymap.js';
 import { loadSymbolIndex, mediaElement, setPhotos, setPhoto, clearPhoto, hasPhoto, symbolCount } from './images.js';
 import { loadAllPhotos, putPhoto, deletePhoto, fileToTileImage } from './photos.js';
 
-const MAX_RECENTS = 12;
+const MAX_PHRASES = 300; // kept in the store
+const SHOWN = 10;        // shown on a screen — the tile ceiling
+
+/** One-time migration: seed the counted phrase store from the old recents. */
+function loadPhrases() {
+  const phrases = load(KEYS.phrases, null);
+  if (phrases) return phrases;
+  const seeded = {};
+  const legacy = load(KEYS.recents, []);
+  for (const [i, r] of legacy.entries()) {
+    if (r && r.text) seeded[r.text] = { icons: r.icons || [], count: 1, last: Date.now() - i };
+  }
+  return seeded;
+}
 
 const state = {
   path: [],          // stack of nodes we've navigated into
@@ -13,7 +26,7 @@ const state = {
   spoken: false,     // the strip holds a finished sentence, already said aloud
   settings: { ...DEFAULT_SETTINGS, ...load(KEYS.settings, {}) },
   people: load(KEYS.people, DEFAULT_PEOPLE),
-  recents: load(KEYS.recents, []),
+  phrases: loadPhrases(),
   custom: load(KEYS.custom, {}),
   editPhotos: false,
   screen: null,      // null | 'keyboard' | 'settings'
@@ -21,6 +34,8 @@ const state = {
 
 const $ = (id) => document.getElementById(id);
 const els = {
+  suggest: $('suggest'),
+  backupInput: $('backup-input'),
   chips: $('chips'),
   speak: $('btn-speak'),
   undo: $('btn-undo'),
@@ -28,6 +43,7 @@ const els = {
   back: $('btn-back'),
   home: $('btn-home'),
   keyboard: $('btn-keyboard'),
+  find: $('btn-find'),
   settings: $('btn-settings'),
   crumb: $('crumb'),
   grid: $('grid'),
@@ -55,6 +71,7 @@ function speakSentence() {
   // overhead this is supposed to remove.
   state.spoken = true;
   renderStrip();
+  renderSuggest();
 }
 
 /** Called before adding a word: retire a sentence that has already been said. */
@@ -65,9 +82,26 @@ function beginSentence() {
 }
 
 function remember(text, icons) {
-  const next = [{ text, icons: icons.filter(Boolean).slice(0, 3) }, ...state.recents.filter((r) => r.text !== text)];
-  state.recents = next.slice(0, MAX_RECENTS);
-  save(KEYS.recents, state.recents);
+  const prev = state.phrases[text];
+  state.phrases[text] = {
+    icons: icons.filter(Boolean).slice(0, 3),
+    count: (prev ? prev.count : 0) + 1,
+    last: Date.now(),
+  };
+  // Cap the store by keeping what he actually says: count first, then recency.
+  const entries = Object.entries(state.phrases);
+  if (entries.length > MAX_PHRASES) {
+    entries.sort(([, a], [, b]) => b.count - a.count || b.last - a.last);
+    state.phrases = Object.fromEntries(entries.slice(0, MAX_PHRASES));
+  }
+  save(KEYS.phrases, state.phrases);
+}
+
+/** His phrases, most-said first; deterministic ties by recency then text. */
+function phrasesRanked() {
+  return Object.entries(state.phrases)
+    .sort(([ta, a], [tb, b]) => b.count - a.count || b.last - a.last || ta.localeCompare(tb))
+    .map(([text, v]) => ({ text, icons: v.icons || [] }));
 }
 
 // ---------------------------------------------------------------------------
@@ -186,7 +220,7 @@ function currentTiles() {
     return [...groups, ...ungrouped.map(personNode)];
   }
   if (node.dynamic === 'recents') {
-    return state.recents.map((r, i) => ({
+    return phrasesRanked().slice(0, SHOWN).map((r, i) => ({
       id: `recent-${i}`,
       icon: (r.icons || []).join('') || '💬',
       label: r.text,
@@ -402,11 +436,47 @@ function renderNav() {
   els.editBanner.hidden = !state.editPhotos;
 }
 
+/**
+ * The suggestion strip — the only adaptive surface on the board.
+ *
+ * Empty strip: his three most-said phrases, one tap each. Mid-sentence: any
+ * stored phrase that begins with what he has built so far, offered whole.
+ * Pure counts and exact prefix matching, so it is explainable and never
+ * surprising; and it lives in this one fixed row so the tile grid never
+ * reorders underneath his hands.
+ */
+function suggestionsFor() {
+  const ranked = phrasesRanked();
+  if (!state.words.length || state.spoken) return ranked.slice(0, 3);
+  const prefix = sentence() + ' ';
+  return ranked.filter((r) => r.text.startsWith(prefix)).slice(0, 3);
+}
+
+function renderSuggest() {
+  const off = state.settings.suggestions === false || state.editPhotos;
+  const list = off ? [] : suggestionsFor();
+  els.suggest.innerHTML = '';
+  els.suggest.hidden = !list.length;
+  for (const r of list) {
+    const btn = h('button', 'suggest-chip');
+    btn.appendChild(h('span', 'suggest-icon', (r.icons || []).join('') || '💬'));
+    btn.appendChild(h('span', 'suggest-text', r.text));
+    btn.addEventListener('click', () => {
+      state.words = [{ icon: (r.icons || [])[0] || '💬', text: r.text, id: null }];
+      state.path = [];
+      render();
+      speakSentence();
+    });
+    els.suggest.appendChild(btn);
+  }
+}
+
 function render() {
   renderStrip();
   renderNav();
   renderBoard();
   renderRail();
+  renderSuggest();
 }
 
 // ---------------------------------------------------------------------------
@@ -458,6 +528,7 @@ function openScreen(name) {
   // leaving the app entirely.
   history.pushState({ screen: name }, '');
   if (name === 'keyboard') renderKeyboard();
+  else if (name === 'find') renderFind();
   else renderSettings();
 }
 
@@ -505,6 +576,52 @@ function renderKeyboard() {
   area.autocapitalize = 'sentences';
   els.screen.appendChild(area);
 
+  // Word completion from his own corpus — the board's vocabulary plus
+  // everything he has said or typed — matched forgivingly, so a phonetic
+  // start still finds the word. No outside dictionary: deterministic, and it
+  // only ever offers words that are already his.
+  const typeSuggest = h('div', 'type-suggest');
+  els.screen.appendChild(typeSuggest);
+
+  const corpus = (() => {
+    const words = new Set();
+    const add = (s) => {
+      for (const word of String(s).toLowerCase().split(/[^a-z']+/)) {
+        if (word.length >= 3) words.add(word);
+      }
+    };
+    const walk = (n) => {
+      add(n.text ?? n.label);
+      (n.children || []).forEach(walk);
+    };
+    ROOT.forEach(walk);
+    for (const p of state.people) personActions(p).forEach((a) => add(a.label));
+    Object.values(state.custom).flat().forEach((c) => add(c.label));
+    Object.keys(state.phrases).forEach(add);
+    return [...words].sort();
+  })();
+
+  const updateTypeSuggest = () => {
+    typeSuggest.innerHTML = '';
+    const m = /([a-zA-Z']+)$/.exec(area.value);
+    const part = m ? m[1].toLowerCase() : '';
+    if (part.length < 2) return;
+    const starts = corpus.filter((word) => word.startsWith(part) && word !== part);
+    const sounds = corpus.filter(
+      (word) => !starts.includes(word) && word !== part && soundsLike(word).startsWith(soundsLike(part))
+    );
+    for (const word of [...starts, ...sounds].slice(0, 3)) {
+      const chip = h('button', 'type-suggest-chip', word);
+      chip.addEventListener('click', () => {
+        area.value = area.value.slice(0, m.index) + word + ' ';
+        typeSuggest.innerHTML = '';
+        area.focus();
+      });
+      typeSuggest.appendChild(chip);
+    }
+  };
+  area.addEventListener('input', updateTypeSuggest);
+
   // Worth saying out loud: spelling it the way it sounds still comes out
   // right, because the listener hears the sound, not the spelling.
   els.screen.appendChild(
@@ -524,17 +641,112 @@ function renderKeyboard() {
 
   els.screen.appendChild(h('h2', 'section-title', 'Said before'));
   const chips = h('div', 'recent-row');
-  for (const r of state.recents) {
+  const ranked = phrasesRanked().slice(0, SHOWN);
+  for (const r of ranked) {
     const btn = h('button', 'recent-chip');
     btn.appendChild(h('span', 'recent-icon', (r.icons || []).join('') || '💬'));
     btn.appendChild(h('span', 'recent-text', r.text));
     btn.addEventListener('click', () => say(r.text, state.settings));
     chips.appendChild(btn);
   }
-  if (!state.recents.length) chips.appendChild(h('p', 'hint', 'Nothing yet.'));
+  if (!ranked.length) chips.appendChild(h('p', 'hint', 'Nothing yet.'));
   els.screen.appendChild(chips);
 
   setTimeout(() => area.focus(), 50);
+}
+
+// --- Find a word -----------------------------------------------------------
+
+/**
+ * Spelled-how-it-sounds normalization, so his spelling still finds things:
+ * "no" matches "know", "sistr" matches "sister". Applied to both sides.
+ */
+function soundsLike(s) {
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+    .replace(/kn/g, 'n')
+    .replace(/wr/g, 'r')
+    .replace(/ph/g, 'f')
+    .replace(/ck/g, 'k')
+    .replace(/c/g, 'k')
+    .replace(/(.)\1+/g, '$1');
+}
+
+const dropVowels = (s) => s.replace(/(?!^)[aeiou]/g, '');
+
+/**
+ * Every place on the board, flat: [{ node, path }] where path is the chain of
+ * ancestor nodes to navigate to. Rebuilt per search, so custom words and
+ * people are always current.
+ */
+function searchIndex() {
+  const out = [];
+  const walk = (node, path) => {
+    out.push({ node, path });
+    for (const c of node.children || []) walk(c, [...path, node]);
+  };
+  for (const n of ROOT) walk(n, []);
+  for (const p of state.people) {
+    const pn = { id: `person-${slug(p.label)}`, icon: p.icon, label: p.label, silent: true, children: personActions(p) };
+    walk(pn, []);
+  }
+  for (const [cat, items] of Object.entries(state.custom)) {
+    for (const c of items) out.push({ node: { id: `custom-${cat}-${slug(c.label)}`, icon: c.icon || '💬', label: c.label }, path: [] });
+  }
+  return out;
+}
+
+function matchesQuery(entry, q) {
+  const hay = `${entry.node.label} ${entry.node.text || ''}`.toLowerCase();
+  if (hay.includes(q.toLowerCase())) return true;
+  const hs = soundsLike(hay);
+  const qs = soundsLike(q);
+  if (qs.length >= 2 && hs.includes(qs)) return true;
+  return qs.length >= 3 && dropVowels(hs).includes(dropVowels(qs));
+}
+
+function renderFind() {
+  els.screen.innerHTML = '';
+  const top = h('div', 'screen-top');
+  const back = h('button', 'nav-btn', '⬅️ Back to pictures');
+  back.addEventListener('click', () => closeScreen());
+  top.appendChild(back);
+  top.appendChild(h('h1', 'screen-title', 'Find a word'));
+  els.screen.appendChild(top);
+
+  const input = h('input', 'find-input');
+  input.placeholder = 'Spell it any way you like';
+  input.autocapitalize = 'none';
+  els.screen.appendChild(input);
+
+  const results = h('div', 'find-results');
+  els.screen.appendChild(results);
+
+  const update = () => {
+    results.innerHTML = '';
+    const q = input.value.trim();
+    if (q.length < 2) return;
+    for (const entry of searchIndex().filter((e) => matchesQuery(e, q)).slice(0, 12)) {
+      const btn = h('button', 'find-hit');
+      btn.appendChild(h('span', 'recent-icon', entry.node.icon || '💬'));
+      const wrap = h('span', 'find-hit-text');
+      wrap.appendChild(h('span', 'recent-text', entry.node.label));
+      const crumbs = entry.path.map((n) => n.label).join(' › ');
+      if (crumbs) wrap.appendChild(h('span', 'find-hit-path', crumbs));
+      btn.appendChild(wrap);
+      // Navigate to where it lives rather than speaking it bare: leaves like
+      // "sharp" only make sense after their category's opening words.
+      btn.addEventListener('click', () => {
+        state.path = entry.node.children || entry.node.dynamic ? [...entry.path, entry.node] : [...entry.path];
+        closeScreen();
+      });
+      results.appendChild(btn);
+    }
+    if (!results.children.length) results.appendChild(h('p', 'hint', 'Nothing yet — keep typing, any spelling is fine.'));
+  };
+  input.addEventListener('input', update);
+  setTimeout(() => input.focus(), 50);
 }
 
 // --- Settings --------------------------------------------------------------
@@ -592,6 +804,11 @@ function renderSettings() {
   const behave = section('How it works');
   behave.appendChild(toggle('Show words under the pictures', state.settings.showWords, (showWords) => {
     patch({ showWords });
+    renderSettings();
+    render();
+  }));
+  behave.appendChild(toggle('Suggest his usual phrases', state.settings.suggestions, (suggestions) => {
+    patch({ suggestions });
     renderSettings();
     render();
   }));
@@ -770,6 +987,41 @@ function renderSettings() {
   }
   els.screen.appendChild(ppl);
 
+  // Backup --------------------------------------------------------------
+  const backup = section('Backup');
+  backup.appendChild(
+    h('p', 'hint', 'Saves everything on this device — photos, his own words, people, and what he says — as one file. Load it on the other device so the iPad and the phone match, and keep a copy in case a browser clears itself.')
+  );
+  const saveBtn = h('button', 'big-btn', '💾  Save a backup file');
+  saveBtn.addEventListener('click', async () => {
+    const photos = {};
+    for (const [id, dataUrl] of await loadAllPhotos()) photos[id] = dataUrl;
+    const payload = {
+      app: 'stan',
+      version: 1,
+      saved: new Date().toISOString(),
+      settings: state.settings,
+      people: state.people,
+      custom: state.custom,
+      phrases: state.phrases,
+      photos,
+    };
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'stan-backup.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  });
+  backup.appendChild(saveBtn);
+  const loadBtn = h('button', 'big-btn', '📂  Load a backup file');
+  loadBtn.addEventListener('click', () => {
+    els.backupInput.value = '';
+    els.backupInput.click();
+  });
+  backup.appendChild(loadBtn);
+  els.screen.appendChild(backup);
+
   // About ---------------------------------------------------------------
   const about = section('About');
   about.appendChild(h('p', 'hint', 'Everything is stored on this device. Nothing is sent anywhere, and it works with no signal.'));
@@ -843,10 +1095,33 @@ els.home.addEventListener('click', () => {
   render();
 });
 els.keyboard.addEventListener('click', () => openScreen('keyboard'));
+els.find.addEventListener('click', () => openScreen('find'));
 els.settings.addEventListener('click', () => openScreen('settings'));
 els.editDone.addEventListener('click', () => {
   state.editPhotos = false;
   render();
+});
+
+// Restoring a backup replaces everything on this device, so it confirms first
+// and reloads after, which re-reads every store from scratch.
+els.backupInput.addEventListener('change', async () => {
+  const file = els.backupInput.files && els.backupInput.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.app !== 'stan' || typeof data !== 'object') throw new Error('not a Stan backup');
+    if (!window.confirm('Load this backup? It replaces what is on this device.')) return;
+    if (data.settings) save(KEYS.settings, { ...DEFAULT_SETTINGS, ...data.settings });
+    if (Array.isArray(data.people)) save(KEYS.people, data.people);
+    if (data.custom && typeof data.custom === 'object') save(KEYS.custom, data.custom);
+    if (data.phrases && typeof data.phrases === 'object') save(KEYS.phrases, data.phrases);
+    for (const [id, dataUrl] of Object.entries(data.photos || {})) {
+      if (typeof dataUrl === 'string' && dataUrl.startsWith('data:image/')) await putPhoto(id, dataUrl);
+    }
+    location.reload();
+  } catch {
+    window.alert('That file is not a Stan backup.');
+  }
 });
 
 // iOS refuses to speak unless the first utterance happens inside a real user

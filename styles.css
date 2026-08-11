@@ -235,6 +235,50 @@ button:active:not(:disabled) {
   font-weight: 700;
 }
 
+/* --- Suggestion strip ---------------------------------------------------- */
+
+.suggest[hidden] {
+  display: none;
+}
+
+.suggest {
+  display: flex;
+  gap: var(--gap);
+  flex: 0 0 auto;
+  height: clamp(52px, 8vh, 68px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.suggest::-webkit-scrollbar {
+  display: none;
+}
+
+.suggest-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  max-width: 90%;
+  padding: 0 18px;
+  border-radius: 999px;
+  background: var(--surface-high);
+  border: 2px dashed var(--dim);
+}
+
+.suggest-icon {
+  font-size: clamp(18px, 2.4vw, 26px);
+  line-height: 1;
+}
+
+.suggest-text {
+  font-size: clamp(14px, 1.9vw, 21px);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* --- Board --------------------------------------------------------------- */
 
 /* On a phone the three action buttons steal more than half the strip, leaving
@@ -755,6 +799,65 @@ select.name-input {
   min-width: 0;
   font-size: 18px;
   font-weight: 600;
+}
+
+.find-input {
+  flex: 0 0 auto;
+  height: clamp(64px, 10vh, 84px);
+  padding: 0 20px;
+  border-radius: var(--radius);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: clamp(24px, 4vw, 38px);
+  font-weight: 600;
+}
+
+.find-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.find-hit {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--surface-high);
+  text-align: left;
+}
+
+.find-hit-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.find-hit-path {
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.type-suggest {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  min-height: 52px;
+}
+
+.type-suggest-chip {
+  flex: 1;
+  border-radius: 14px;
+  background: var(--surface-high);
+  border: 2px dashed var(--dim);
+  font-size: clamp(17px, 2.4vw, 24px);
+  font-weight: 700;
+  padding: 8px;
 }
 
 .recent-row {

@@ -11,6 +11,8 @@
  */
 
 import { spawn } from 'node:child_process';
+import { writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -270,6 +272,98 @@ try {
     await page.getByRole('button', { name: 'my blue pill', exact: true }).click();
     await page.waitForTimeout(200);
     check(`${name}: his own words build a sentence`, await strip(), '🙋 I want 💬 my blue pill');
+
+    // --- The suggestion strip: deterministic learning ---------------------
+    // Say a phrase twice; it should surface when idle, finish the sentence
+    // when he starts it, and survive a reload.
+    for (let i = 0; i < 2; i++) {
+      await tap('I want');
+      await tap('to go somewhere');
+      await tap('a lottery ticket');
+    }
+    check(`${name}: idle strip offers his usual phrase`,
+      await page.locator('.suggest-chip', { hasText: 'I want a lottery ticket' }).count(), 1);
+    await tap('I want');
+    const finish = page.locator('.suggest-chip', { hasText: 'I want a lottery ticket' });
+    check(`${name}: finish-my-sentence chip appears`, await finish.count(), 1);
+    await finish.click();
+    await page.waitForTimeout(250);
+    check(`${name}: chip speaks the whole sentence`, await strip(), '🙋 I want a lottery ticket');
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    check(`${name}: suggestions survive a reload`,
+      await page.locator('.suggest-chip', { hasText: 'I want a lottery ticket' }).count(), 1);
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('stan.settings.v1') || '{}');
+      localStorage.setItem('stan.settings.v1', JSON.stringify({ ...s, suggestions: false }));
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    check(`${name}: suggestions toggle hides the strip`,
+      await page.locator('#suggest').isHidden(), true);
+    await page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('stan.settings.v1') || '{}');
+      localStorage.setItem('stan.settings.v1', JSON.stringify({ ...s, suggestions: true }));
+    });
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+
+    // --- Find a word, spelled any which way ------------------------------
+    await page.getByRole('button', { name: '🔍 Find' }).click();
+    await page.waitForTimeout(300);
+    await page.locator('.find-input').fill('sistr');
+    await page.waitForTimeout(250);
+    const hit = page.locator('.find-hit', { hasText: 'Tracey' }).first();
+    check(`${name}: search forgives his spelling`, (await hit.count()) >= 1, true);
+    await hit.click();
+    await page.waitForTimeout(300);
+    check(`${name}: search result lands where it lives`,
+      await page.getByRole('button', { name: 'Call my sister Tracey', exact: true }).count(), 1);
+    await page.getByRole('button', { name: '🏠 Home' }).click();
+    await page.waitForTimeout(140);
+
+    // --- Keyboard completion from his own corpus -------------------------
+    await page.getByRole('button', { name: '⌨️ Type' }).click();
+    await page.waitForTimeout(300);
+    await page.locator('.type-area').fill('I need sukt');
+    await page.waitForTimeout(200);
+    check(`${name}: completion hears "sukt" as suction`,
+      await page.locator('.type-suggest-chip', { hasText: 'suction' }).count(), 1);
+    await page.locator('.type-suggest-chip', { hasText: 'suction' }).click();
+    await page.waitForTimeout(150);
+    check(`${name}: completion replaces the partial word`,
+      await page.locator('.type-area').inputValue(), 'I need suction ');
+    await page.getByRole('button', { name: '⬅️ Back to pictures' }).click();
+    await page.waitForTimeout(200);
+
+    // --- Backup round-trip: save, wipe the device, restore ---------------
+    const dump = await page.evaluate(() => ({
+      app: 'stan',
+      version: 1,
+      settings: JSON.parse(localStorage.getItem('stan.settings.v1') || '{}'),
+      people: JSON.parse(localStorage.getItem('stan.people.v2') || '[]'),
+      custom: JSON.parse(localStorage.getItem('stan.custom.v1') || '{}'),
+      phrases: JSON.parse(localStorage.getItem('stan.phrases.v1') || '{}'),
+      photos: {},
+    }));
+    const dir = mkdtempSync(join(tmpdir(), 'stan-'));
+    const backupPath = join(dir, 'stan-backup.json');
+    writeFileSync(backupPath, JSON.stringify(dump));
+    await page.evaluate(() => localStorage.clear());
+    await page.reload({ waitUntil: 'networkidle' });
+    await page.waitForTimeout(400);
+    page.once('dialog', (d) => d.accept());
+    await page.setInputFiles('#backup-input', backupPath);
+    await page.waitForTimeout(900); // handler restores stores and reloads
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(400);
+    await tap('I want');
+    check(`${name}: backup restores his own words`,
+      await page.getByRole('button', { name: 'my blue pill', exact: true }).count(), 1);
+    await page.getByRole('button', { name: '🏠 Home' }).click();
+    await page.waitForTimeout(140);
+    check(`${name}: backup restores what he says`,
+      await page.locator('.suggest-chip', { hasText: 'I want a lottery ticket' }).count(), 1);
 
     await page.close();
   }

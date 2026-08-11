@@ -6,7 +6,10 @@
 const mem = new Map();
 
 export const KEYS = {
-  recents: 'stan.recents.v1',
+  recents: 'stan.recents.v1', // legacy; read once to seed the phrase store
+  // Everything he has ever said, with counts: { [text]: {icons, count, last} }.
+  // This is the memory the suggestion strip and Said before are built from.
+  phrases: 'stan.phrases.v1',
   // v2: the defaults gained his real people and their groups. Devices that
   // opened the app earlier persisted the old default list under v1; bumping
   // the key hands them the full one instead of freezing them in the past.
@@ -49,4 +52,8 @@ export const DEFAULT_SETTINGS = {
   // switch exists so he (or whoever is holding the iPad) can put it away for
   // an afternoon, not so someone else can decide he doesn't get it.
   strongWords: true,
+  // The suggestion strip: his top phrases when idle, finish-my-sentence chips
+  // while building. Deterministic counts on this device; the grid of tiles
+  // never reorders because of it.
+  suggestions: true,
 };
