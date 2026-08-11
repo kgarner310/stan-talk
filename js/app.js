@@ -123,7 +123,9 @@ function tileButton({ id, icon, label, color, ariaLabel, onActivate }) {
 
   const btn = document.createElement('button');
   btn.className = 'tile';
-  btn.style.background = color || '#262D38';
+  // Null colour means the neutral tile from the stylesheet — only emergencies
+  // and Yes carry a colour of their own now.
+  btn.style.background = color || 'var(--tile)';
   btn.setAttribute('aria-label', ariaLabel || label);
   btn.appendChild(mediaElement(id, icon));
 
@@ -334,7 +336,7 @@ function renderBoard() {
         id: tile.id,
         icon: tile.icon,
         label: tile.label,
-        color: tile.color || (node && node.color) || '#262D38',
+        color: tile.color || (node && node.color) || null,
         onActivate: () => onTile(tile),
       })
     );
@@ -361,7 +363,7 @@ function renderRail() {
     if (q.gated && state.settings[q.gated] === false) continue;
     const btn = document.createElement('button');
     btn.className = 'quick';
-    btn.style.background = q.color;
+    btn.style.background = q.color || 'var(--tile)';
     btn.setAttribute('aria-label', q.text || q.label);
     const media = mediaElement(`quick-${slug(q.label)}`, q.icon);
     media.classList.add('quick-icon');
@@ -423,6 +425,10 @@ function renderStrip() {
   els.chips.classList.toggle('spoken', state.spoken && !!state.words.length);
 
   const empty = !state.words.length;
+  // With no sentence started, Say it / Undo / Clear are all dead buttons and
+  // the strip is just a hint — on a phone that chrome was eating half the
+  // screen before a single tile. Collapse it until there is something to say.
+  document.body.classList.toggle('sentence-empty', empty);
   els.speak.disabled = empty;
   els.undo.disabled = empty;
   els.clear.disabled = empty;

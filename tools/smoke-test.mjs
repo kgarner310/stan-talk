@@ -273,6 +273,45 @@ try {
     await page.waitForTimeout(200);
     check(`${name}: his own words build a sentence`, await strip(), '🙋 I want 💬 my blue pill');
 
+    // --- Large-print design guarantees -----------------------------------
+    // These are Kyle's complaints turned into assertions: too small on a
+    // phone, too many colours, and suggestions buried below the fold.
+    const labelPx = await page.evaluate(() => {
+      const el = document.querySelector('#grid .tile-label');
+      return el ? parseFloat(getComputedStyle(el).fontSize) : 0;
+    });
+    check(`${name}: tile labels are large print (>=20px)`, labelPx >= 20, true);
+
+    // A clipped word is worse than a wrapped one: every tile label must fit
+    // inside its tile, vertically as well as horizontally.
+    const clipped = await page.evaluate(() =>
+      [...document.querySelectorAll('#grid .tile')].filter((t) => {
+        const l = t.querySelector('.tile-label');
+        if (!l) return false;
+        return l.scrollHeight > l.clientHeight + 1;
+      }).length
+    );
+    check(`${name}: no tile label is cut off`, clipped, 0);
+
+    const hues = await page.evaluate(() => {
+      const seen = new Set();
+      for (const t of document.querySelectorAll('#grid .tile, .quick')) {
+        seen.add(getComputedStyle(t).backgroundColor);
+      }
+      return [...seen].length;
+    });
+    check(`${name}: home screen uses at most 3 tile colours`, hues <= 3, true);
+
+    // Emergency must be the loudest thing on screen, and the only red.
+    const reds = await page.evaluate(() => {
+      const isRed = (c) => {
+        const m = c.match(/\d+/g);
+        return m && +m[0] > 150 && +m[1] < 90 && +m[2] < 90;
+      };
+      return [...document.querySelectorAll('.quick')].filter((q) => isRed(getComputedStyle(q).backgroundColor)).length;
+    });
+    check(`${name}: only the emergency button is red`, reds, 1);
+
     // --- The suggestion strip: deterministic learning ---------------------
     // Say a phrase twice; it should surface when idle, finish the sentence
     // when he starts it, and survive a reload.
@@ -281,6 +320,14 @@ try {
       await tap('to go somewhere');
       await tap('a lottery ticket');
     }
+    // The suggestions must sit ABOVE the tile grid — they are the front door.
+    const order = await page.evaluate(() => {
+      const s = document.getElementById('suggest').getBoundingClientRect();
+      const g = document.getElementById('grid').getBoundingClientRect();
+      return { above: s.bottom <= g.top + 1, tall: s.height };
+    });
+    check(`${name}: suggestions sit above the grid`, order.above, true);
+    check(`${name}: the top suggestion is a big target (>=72px)`, order.tall >= 72, true);
     check(`${name}: idle strip offers his usual phrase`,
       await page.locator('.suggest-chip', { hasText: 'I want a lottery ticket' }).count(), 1);
     await tap('I want');

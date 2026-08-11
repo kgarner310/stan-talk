@@ -23,18 +23,31 @@
  *   kind    - 'bodymap' renders the pain diagram instead of a grid
  */
 
+/**
+ * Colour carries exactly two meanings now, and neither of them is "category".
+ *
+ * Nine saturated hues made the board look like the confusing mail he already
+ * struggles with. Categories are told apart by POSITION and a big picture —
+ * which is what his hands and eyes actually use — so every ordinary tile is
+ * the same calm neutral, and colour is spent only where it changes what he
+ * does: DANGER for emergencies, GO for yes.
+ *
+ * `null` means "use the neutral tile colour from the stylesheet".
+ */
 export const COLORS = {
-  neck: '#0891B2',
-  feed: '#BE185D',
-  want: '#1D6FE0',
-  feel: '#7B4BD6',
-  body: '#C62F35',
-  ask: '#C97A05',
-  doThis: '#0F8B7E',
-  talk: '#2E7D32',
-  people: '#3F4FBF',
-  time: '#546276',
-  recent: '#5A6472',
+  neck: null,
+  feed: null,
+  want: null,
+  feel: null,
+  body: null,
+  ask: null,
+  doThis: null,
+  talk: null,
+  people: null,
+  time: null,
+  recent: null,
+  danger: 'var(--danger)',
+  go: 'var(--go)',
 };
 
 /** Group tile: navigates, adds nothing to the sentence. */
@@ -46,6 +59,9 @@ const g = (id, icon, label, color, children) => ({
   color,
   children,
 });
+
+/** Emergency tile: the only thing besides Yes that is allowed a colour. */
+const d = (node) => ({ ...node, color: COLORS.danger });
 
 /** Leaf tile: adds words and finishes the phrase. */
 const w = (icon, label, text) => ({
@@ -306,12 +322,13 @@ const neck = {
     {
       id: 'neck-alert',
       icon: '🚨',
+      color: COLORS.danger,
       label: 'I am a neck breather',
       text: 'I am a neck breather. I breathe through the opening in my neck, not my mouth or nose. Do not give mouth to mouth.',
     },
     g('neck-air', '💨', 'breathing', COLORS.neck, [
-      w('😧', 'I cannot breathe well'),
-      w('🚫', 'My stoma is blocked'),
+      d(w('😧', 'I cannot breathe well')),
+      d(w('🚫', 'My stoma is blocked')),
       w('🌬️', 'I need suction'),
       w('😮‍💨', 'I need to cough'),
       w('⏸️', 'Give me a minute to get my breath'),
@@ -396,10 +413,10 @@ const neck = {
       w('😣', 'My drain hurts'),
       w('🈵', 'My drain is full'),
       w('💧', 'My drain is leaking'),
-      w('🚨', 'My drain came out'),
+      d(w('🚨', 'My drain came out')),
       w('❓', 'When does the drain come out?'),
     ]),
-    w('🩸', 'My stoma is bleeding'),
+    d(w('🩸', 'My stoma is bleeding')),
   ],
 };
 
@@ -439,8 +456,8 @@ const feed = {
       w('🥤', 'I am thirsty'),
       w('👌', 'That went down fine'),
     ]),
-    w('🚱', 'My tube is blocked'),
-    w('🚨', 'My feeding tube came out'),
+    d(w('🚱', 'My tube is blocked')),
+    d(w('🚨', 'My feeding tube came out')),
     w('🩹', 'The skin around my tube is sore'),
     w('💧', 'It is leaking around the tube'),
     w('❓', 'Am I allowed anything by mouth yet?'),
@@ -649,21 +666,22 @@ export const ROOT = [want, feel, pain, neck, feed, ask, doThis, talk, people, re
  * sentence being built, because "Stop" cannot wait for a sentence to finish.
  */
 export const QUICK = [
-  // First, and deliberately ahead of the more frequent Yes/No: a blocked stoma
-  // is a minutes-level problem, and it must never cost more than one tap.
-  { icon: '🚨', label: 'Cannot breathe', text: 'I cannot breathe. My stoma is blocked. I am a neck breather.', color: '#E11D48' },
-  { icon: '👍', label: 'Yes', text: 'Yes', color: '#2E7D32' },
-  { icon: '👎', label: 'No', text: 'No', color: '#C62F35' },
-  { icon: '✋', label: 'Wait', text: 'Wait', color: '#C97A05' },
-  { icon: '🛑', label: 'Stop', text: 'Stop', color: '#C62F35' },
-  { icon: '🆘', label: 'Help', text: 'I need help', color: '#C97A05' },
-  { icon: '🤕', label: 'Pain', text: 'I am in pain', color: '#C62F35' },
-  { icon: '🙏', label: 'Thanks', text: 'Thank you', color: '#2E7D32' },
-  { icon: '🤷', label: "Don't get it", text: 'I do not understand', color: '#5A6472' },
+  // Colour here means urgency, nothing else: red is emergency, green is Yes.
+  // Everything in between is the same neutral as the tiles, so the two that
+  // matter are the two that stand out under a fluorescent light.
+  { icon: '🚨', label: 'Cannot breathe', text: 'I cannot breathe. My stoma is blocked. I am a neck breather.', color: 'var(--danger)' },
+  { icon: '👍', label: 'Yes', text: 'Yes', color: 'var(--go)' },
+  { icon: '👎', label: 'No', text: 'No', color: null },
+  { icon: '✋', label: 'Wait', text: 'Wait', color: null },
+  { icon: '🛑', label: 'Stop', text: 'Stop', color: null },
+  { icon: '🆘', label: 'Help', text: 'I need help', color: null },
+  { icon: '🤕', label: 'Pain', text: 'I am in pain', color: null },
+  { icon: '🙏', label: 'Thanks', text: 'Thank you', color: null },
+  { icon: '🤷', label: "Don't get it", text: 'I do not understand', color: null },
   // A door, not a word: jumps straight to the strong-words screen, so any
   // curse is two taps from anywhere. Appended last so no rail position moves,
   // and it honours the same Settings switch as the screen it opens.
-  { icon: '🤬', label: 'Strong words', goto: 'feel-swear', gated: 'strongWords', color: '#7B4BD6' },
+  { icon: '🤬', label: 'Strong words', goto: 'feel-swear', gated: 'strongWords', color: null },
 ];
 
 /**
