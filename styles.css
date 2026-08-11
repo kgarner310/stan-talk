@@ -938,6 +938,19 @@ select.name-input {
     font-size: 12px;
   }
 
+  /* Five nav buttons at tablet padding overflowed a 412px screen by 60-odd
+     pixels, which put the settings gear entirely off the right edge — and
+     because the nav clipped internally, the page-level "no horizontal
+     scroll" check never saw it. The labels stay at full size; only the
+     padding and the gap give way. */
+  .nav {
+    gap: 5px;
+  }
+
+  .nav-btn {
+    padding: 0 6px;
+  }
+
   /* Tall tiles beat many tiles on a phone: fewer, bigger, easier to hit. */
   .grid {
     grid-auto-rows: minmax(118px, 1fr);

@@ -312,6 +312,27 @@ try {
     });
     check(`${name}: only the emergency button is red`, reds, 1);
 
+    // A button he cannot see is a button he does not have. The page-level
+    // "no horizontal scroll" check missed the settings gear sitting 10px off
+    // the right edge of a phone, because the nav row clipped it internally
+    // instead of pushing the document wide. So check every control against
+    // the actual window.
+    const offscreen = await page.evaluate(() => {
+      const bad = [];
+      const controls = document.querySelectorAll(
+        '#nav button, .quick, #grid .tile, .act, #suggest button'
+      );
+      for (const el of controls) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (r.left < -1 || r.right > innerWidth + 1) {
+          bad.push((el.id || el.innerText || el.className).slice(0, 24));
+        }
+      }
+      return bad;
+    });
+    check(`${name}: every button fits on screen`, offscreen.join(',') || 'none', 'none');
+
     // --- The suggestion strip: deterministic learning ---------------------
     // Say a phrase twice; it should surface when idle, finish the sentence
     // when he starts it, and survive a reload.
