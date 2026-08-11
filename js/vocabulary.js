@@ -687,11 +687,11 @@ export const DEFAULT_PEOPLE = [
   { icon: '👦', label: 'Zach (grandson)', name: 'Zach', role: 'grandson', group: 'family' },
   { icon: '🧑‍🦱', label: 'Zack (nephew)', name: 'Zack', role: 'nephew', group: 'family' },
   { icon: '👩‍🦰', label: 'Desiree', group: 'family' },
-  { icon: '🕯️', label: 'Eric', role: 'son', gone: true, group: 'family' },
+  { icon: '👨', label: 'Eric', role: 'son', gone: true, group: 'family' },
   { icon: '👨‍🦳', label: 'Dad', gone: true, group: 'family' },
   { icon: '👩‍🦳', label: 'Mom', gone: true, group: 'family' },
   { icon: '👵', label: 'Grandma', gone: true, group: 'family' },
-  { icon: '🕯️', label: 'Bandy', gone: true, light: true, group: 'family' },
+  { icon: '👩‍🦱', label: 'Bandy', gone: true, light: true, group: 'family' },
 
   // Friends. Some icons are mnemonics until photos replace them — a moon for
   // Cindy, a bee for Melissa, a gem for Tiffany.
