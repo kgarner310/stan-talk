@@ -311,13 +311,24 @@ function colsForWidth() {
   return window.innerWidth >= 820 ? 3 : 2;
 }
 
+/** Depth-first lookup of a vocabulary node by id, for rail shortcuts. */
+function findNode(id, nodes = ROOT) {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    const hit = n.children && findNode(id, n.children);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 function renderRail() {
   els.rail.innerHTML = '';
   for (const q of QUICK) {
+    if (q.gated && state.settings[q.gated] === false) continue;
     const btn = document.createElement('button');
     btn.className = 'quick';
     btn.style.background = q.color;
-    btn.setAttribute('aria-label', q.text);
+    btn.setAttribute('aria-label', q.text || q.label);
     const media = mediaElement(`quick-${slug(q.label)}`, q.icon);
     media.classList.add('quick-icon');
     btn.appendChild(media);
@@ -326,8 +337,18 @@ function renderRail() {
     label.textContent = q.label;
     btn.appendChild(label);
     // Quick words speak alone and never join the sentence being built —
-    // "Stop" cannot wait for a sentence to be finished first.
+    // "Stop" cannot wait for a sentence to be finished first. A `goto` entry
+    // is the one exception: it navigates instead of speaking, and still
+    // leaves the sentence untouched.
     btn.addEventListener('click', () => {
+      if (q.goto) {
+        const target = findNode(q.goto);
+        if (target) {
+          state.path = [target];
+          render();
+        }
+        return;
+      }
       say(q.text, state.settings);
       remember(q.text, [q.icon]);
     });

@@ -202,6 +202,17 @@ try {
     await page.getByRole('button', { name: 'Clear' }).click();
     await page.waitForTimeout(140);
 
+    // The rail's 🤬 is a door: one tap from anywhere to the strong words,
+    // without touching whatever sentence is in progress.
+    await tap('I want');
+    const midSentence = await strip();
+    await page.getByRole('button', { name: 'Strong words', exact: true }).click();
+    await page.waitForTimeout(200);
+    check(`${name}: rail shortcut opens strong words`, await page.getByRole('button', { name: 'Bullshit', exact: true }).count(), 1);
+    check(`${name}: rail shortcut leaves the sentence alone`, await strip(), midSentence);
+    await page.getByRole('button', { name: 'Clear' }).click();
+    await page.waitForTimeout(140);
+
     // Swearing is his vocabulary and speaks as itself — "Bullshit", not "I feel
     // Bullshit" — and the switch that hides it must not shift any tile above it.
     await tap('I feel');

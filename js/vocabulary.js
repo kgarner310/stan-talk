@@ -660,6 +660,10 @@ export const QUICK = [
   { icon: '🤕', label: 'Pain', text: 'I am in pain', color: '#C62F35' },
   { icon: '🙏', label: 'Thanks', text: 'Thank you', color: '#2E7D32' },
   { icon: '🤷', label: "Don't get it", text: 'I do not understand', color: '#5A6472' },
+  // A door, not a word: jumps straight to the strong-words screen, so any
+  // curse is two taps from anywhere. Appended last so no rail position moves,
+  // and it honours the same Settings switch as the screen it opens.
+  { icon: '🤬', label: 'Strong words', goto: 'feel-swear', gated: 'strongWords', color: '#7B4BD6' },
 ];
 
 /**
